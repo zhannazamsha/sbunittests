@@ -19,13 +19,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-class UserControllerTest {
+public class UserControllerTest {
 
     @Mock
     private UserService userService;
@@ -42,113 +40,123 @@ class UserControllerTest {
     private MockMvc mockMvc;
 
     @BeforeEach
-    void setUp() {
+    public void setup() {
         MockitoAnnotations.openMocks(this);
         mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
     }
 
     @Test
-    void testGetUsers() throws Exception {
-        when(userService.getAllUsers()).thenReturn(Collections.emptyList());
+    public void testGetUsers() {
+        List<User> users = Collections.singletonList(new User());
+        when(userService.getAllUsers()).thenReturn(users);
 
-        mockMvc.perform(get("/user"))
-                .andExpect(status().isOk());
+        String viewName = userController.getUsers(model);
 
-        verify(userService, times(1)).getAllUsers();
-        verify(model, times(1)).addAttribute(eq("users"), any());
+        verify(model).addAttribute("users", users);
+        assertEquals("user-main", viewName);
     }
 
     @Test
-    void testGetUsersByCategory() throws Exception {
-        when(userService.getUsersByCategory(anyString())).thenReturn(Optional.of(Collections.emptyList()));
+    public void testGetUsersByCategory() {
+        List<User> users = Collections.singletonList(new User());
+        when(userService.getUsersByCategory("NON_CLUB_MEMBER")).thenReturn(Optional.of(users));
 
-        mockMvc.perform(get("/user/non-club-member"))
-                .andExpect(status().isOk());
+        String viewName = userController.getUsersByCategory(model);
 
-        verify(userService, times(1)).getUsersByCategory(eq("NON_CLUB_MEMBER"));
-        verify(model, times(1)).addAttribute(eq("users"), any());
+        verify(model).addAttribute("users", users);
+        assertEquals("user-by-category", viewName);
     }
 
     @Test
-    void testAddUser() throws Exception {
-        mockMvc.perform(post("/user/add")
-                        .param("name", "John")
-                        .param("surname", "Doe"))
-                .andExpect(status().is3xxRedirection());
+    public void testGetUsersByCategory_UserNotFound() {
+        when(userService.getUsersByCategory("NON_CLUB_MEMBER")).thenReturn(Optional.empty());
 
-        verify(userService, times(1)).saveUser(any(User.class));
+        assertThrows(UserNotFoundException.class, () -> {
+            userController.getUsersByCategory(model);
+        });
     }
 
     @Test
-    void testGetUserById() throws Exception {
+    public void testAddUser() {
+        User user = new User();
+
+        String viewName = userController.addUser(user);
+
+        verify(userService).saveUser(user);
+        assertEquals("redirect:/user", viewName);
+    }
+
+    @Test
+    public void testGetUserById() {
         User user = new User();
         user.setId(1L);
-        when(userService.getUserById(anyLong())).thenReturn(Optional.of(user));
-        when(serviceUsageRecordService.getServiceUsageRecordByUserId(anyLong())).thenReturn(Optional.of(Collections.emptyList()));
+        List<ServiceUsageRecord> records = Collections.singletonList(new ServiceUsageRecord());
+        when(userService.getUserById(1L)).thenReturn(Optional.of(user));
+        when(serviceUsageRecordService.getServiceUsageRecordByUserId(1L)).thenReturn(Optional.of(records));
 
-        mockMvc.perform(get("/user/1"))
-                .andExpect(status().isOk());
+        String viewName = userController.getUserById(1L, model);
 
-        verify(userService, times(1)).getUserById(eq(1L));
-        verify(serviceUsageRecordService, times(1)).getServiceUsageRecordByUserId(eq(1L));
-        verify(model, times(1)).addAttribute(eq("user"), any());
+        verify(model).addAttribute("user", user);
+        assertEquals("user-details", viewName);
     }
 
     @Test
-    void testGetUserByIdWithServices() throws Exception {
-        User user = new User();
-        user.setId(1L);
-        when(userService.userExistsById(anyLong())).thenReturn(true);
-        when(userService.getUserById(anyLong())).thenReturn(Optional.of(user));
-        when(serviceUsageRecordService.getServiceUsageRecordByUserId(anyLong())).thenReturn(Optional.of(Collections.emptyList()));
+    public void testGetUserById_UserNotFound() {
+        when(userService.getUserById(1L)).thenReturn(Optional.empty());
 
-        mockMvc.perform(get("/user/1/service-usage-record"))
-                .andExpect(status().isOk());
-
-        verify(userService, times(1)).userExistsById(eq(1L));
-        verify(userService, times(1)).getUserById(eq(1L));
-        verify(serviceUsageRecordService, times(1)).getServiceUsageRecordByUserId(eq(1L));
-        verify(model, times(1)).addAttribute(eq("user"), any());
+        assertThrows(UserNotFoundException.class, () -> {
+            userController.getUserById(1L, model);
+        });
     }
 
     @Test
-    void testGetUserEditPage() throws Exception {
+    public void testGetUserByIdWithServices() {
         User user = new User();
         user.setId(1L);
-        when(userService.getUserById(anyLong())).thenReturn(Optional.of(user));
+        List<ServiceUsageRecord> records = Collections.singletonList(new ServiceUsageRecord());
+        when(userService.userExistsById(1L)).thenReturn(true);
+        when(userService.getUserById(1L)).thenReturn(Optional.of(user));
+        when(serviceUsageRecordService.getServiceUsageRecordByUserId(1L)).thenReturn(Optional.of(records));
 
-        mockMvc.perform(get("/user/1/edit"))
-                .andExpect(status().isOk());
+        String viewName = userController.getUserByIdWithServices(1L, model);
 
-        verify(userService, times(1)).getUserById(eq(1L));
-        verify(model, times(1)).addAttribute(eq("user"), any());
+        verify(model).addAttribute("user", user);
+        assertEquals("user-service-usage-record-details", viewName);
     }
 
     @Test
-    void testUpdateUser() throws Exception {
+    public void testGetUserEditPage() {
         User user = new User();
-        user.setId(1L);
-        when(userService.getUserById(anyLong())).thenReturn(Optional.of(user));
+        when(userService.getUserById(1L)).thenReturn(Optional.of(user));
 
-        mockMvc.perform(post("/user/1/edit")
-                        .param("name", "John")
-                        .param("surname", "Doe"))
-                .andExpect(status().is3xxRedirection());
+        String viewName = userController.getUserEditPage(1L, model);
 
-        verify(userService, times(1)).getUserById(eq(1L));
-        verify(userService, times(1)).saveUser(any(User.class));
+        verify(model).addAttribute("user", user);
+        assertEquals("user-edit", viewName);
     }
 
     @Test
-    void testDeleteUser() throws Exception {
+    public void testUpdateUser() {
+        User existingUser = new User();
+        when(userService.getUserById(1L)).thenReturn(Optional.of(existingUser));
+
+        User updatedUser = new User();
+        updatedUser.setSurname("Doe");
+
+        String viewName = userController.updateUser(1L, updatedUser);
+
+        verify(userService).saveUser(existingUser);
+        assertEquals("redirect:/user", viewName);
+    }
+
+    @Test
+    public void testDeleteUser() {
         User user = new User();
-        user.setId(1L);
-        when(userService.getUserById(anyLong())).thenReturn(Optional.of(user));
+        when(userService.getUserById(1L)).thenReturn(Optional.of(user));
 
-        mockMvc.perform(post("/user/1/remove"))
-                .andExpect(status().is3xxRedirection());
+        String viewName = userController.deleteUser(1L);
 
-        verify(userService, times(1)).getUserById(eq(1L));
-        verify(userService, times(1)).deleteUser(any(User.class));
+        verify(userService).deleteUser(user);
+        assertEquals("redirect:/user", viewName);
     }
 }

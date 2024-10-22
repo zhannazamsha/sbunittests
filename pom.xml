@@ -16,7 +16,7 @@
     <properties>
         <java.version>17</java.version>
         <sonar.coverage.jacoco.xmlReportPaths>
-                ../sbunittests/sonar/site/jacoco-aggregate/jacoco.xml
+                ../src/sonar/site/jacoco/jacoco.xml
         </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 

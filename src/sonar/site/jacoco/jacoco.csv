@@ -1,0 +1,12 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+web-app,com.web.app.exception,UserNotFoundException,4,0,0,0,2,0,1,0,1,0
+web-app,com.web.app.exception,ServiceUsageRecordNotFoundException,4,0,0,0,2,0,1,0,1,0
+web-app,com.web.app,Application,5,3,0,0,2,1,1,1,1,1
+web-app,com.web.app.service,ServiceUsageRecordService,38,3,0,0,8,1,7,1,7,1
+web-app,com.web.app.service,UserService,38,3,0,0,8,1,7,1,7,1
+web-app,com.web.app.utils,ServiceConsumedDateComparator,21,0,4,0,2,0,4,0,2,0
+web-app,com.web.app.model,ServiceUsageRecord,120,3,0,0,26,2,25,1,25,1
+web-app,com.web.app.model,User,143,3,0,0,36,2,24,1,24,1
+web-app,com.web.app.controller,ServiceUsageRecordController,153,9,0,0,39,4,9,1,9,1
+web-app,com.web.app.controller,ExceptionHandlerController,8,3,0,0,2,1,1,1,1,1
+web-app,com.web.app.controller,UserController,203,9,2,0,45,4,15,1,14,1

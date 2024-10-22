@@ -15,9 +15,6 @@
     <description>Web app</description>
     <properties>
         <java.version>17</java.version>
-        <sonar.coverage.jacoco.xmlReportPaths>
-                ../src/sonar/site/jacoco/jacoco.xml
-        </sonar.coverage.jacoco.xmlReportPaths>
     </properties>
 
     <dependencies>

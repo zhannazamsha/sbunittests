@@ -10,17 +10,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.ui.Model;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 public class UserControllerTest {
@@ -37,34 +34,31 @@ public class UserControllerTest {
     @InjectMocks
     private UserController userController;
 
-    private MockMvc mockMvc;
-
     @BeforeEach
-    public void setup() {
+    public void setUp() {
         MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
     }
 
     @Test
     public void testGetUsers() {
-        List<User> users = Collections.singletonList(new User());
+        List<User> users = new ArrayList<>();
         when(userService.getAllUsers()).thenReturn(users);
 
         String viewName = userController.getUsers(model);
 
-        verify(model).addAttribute("users", users);
-        assertEquals("user-main", viewName);
+        verify(model, times(1)).addAttribute(UserController.USERS_ATTRIBUTE, users);
+        assertEquals(UserController.USER_MAIN_PAGE, viewName);
     }
 
     @Test
     public void testGetUsersByCategory() {
-        List<User> users = Collections.singletonList(new User());
+        List<User> users = new ArrayList<>();
         when(userService.getUsersByCategory("NON_CLUB_MEMBER")).thenReturn(Optional.of(users));
 
         String viewName = userController.getUsersByCategory(model);
 
-        verify(model).addAttribute("users", users);
-        assertEquals("user-by-category", viewName);
+        verify(model, times(1)).addAttribute(UserController.USERS_ATTRIBUTE, users);
+        assertEquals(UserController.USER_BY_CATEGORY_PAGE, viewName);
     }
 
     @Test
@@ -82,81 +76,90 @@ public class UserControllerTest {
 
         String viewName = userController.addUser(user);
 
-        verify(userService).saveUser(user);
-        assertEquals("redirect:/user", viewName);
+        verify(userService, times(1)).saveUser(user);
+        assertEquals(UserController.REDIRECT_TO_USER, viewName);
     }
 
     @Test
     public void testGetUserById() {
+        long userId = 1L;
         User user = new User();
-        user.setId(1L);
-        List<ServiceUsageRecord> records = Collections.singletonList(new ServiceUsageRecord());
-        when(userService.getUserById(1L)).thenReturn(Optional.of(user));
-        when(serviceUsageRecordService.getServiceUsageRecordByUserId(1L)).thenReturn(Optional.of(records));
+        user.setId(userId);
+        List<ServiceUsageRecord> serviceUsageRecords = new ArrayList<>();
 
-        String viewName = userController.getUserById(1L, model);
+        when(userService.getUserById(userId)).thenReturn(Optional.of(user));
+        when(serviceUsageRecordService.getServiceUsageRecordByUserId(userId)).thenReturn(Optional.of(serviceUsageRecords));
 
-        verify(model).addAttribute("user", user);
-        assertEquals("user-details", viewName);
+        String viewName = userController.getUserById(userId, model);
+
+        verify(model, times(1)).addAttribute(UserController.USER_ATTRIBUTE, user);
+        assertEquals(UserController.USER_DETAILS_PAGE, viewName);
     }
 
     @Test
     public void testGetUserById_UserNotFound() {
-        when(userService.getUserById(1L)).thenReturn(Optional.empty());
+        long userId = 1L;
+        when(userService.getUserById(userId)).thenReturn(Optional.empty());
 
         assertThrows(UserNotFoundException.class, () -> {
-            userController.getUserById(1L, model);
+            userController.getUserById(userId, model);
         });
     }
 
     @Test
     public void testGetUserByIdWithServices() {
+        long userId = 1L;
         User user = new User();
-        user.setId(1L);
-        List<ServiceUsageRecord> records = Collections.singletonList(new ServiceUsageRecord());
-        when(userService.userExistsById(1L)).thenReturn(true);
-        when(userService.getUserById(1L)).thenReturn(Optional.of(user));
-        when(serviceUsageRecordService.getServiceUsageRecordByUserId(1L)).thenReturn(Optional.of(records));
+        user.setId(userId);
+        List<ServiceUsageRecord> serviceUsageRecords = new ArrayList<>();
 
-        String viewName = userController.getUserByIdWithServices(1L, model);
+        when(userService.userExistsById(userId)).thenReturn(true);
+        when(userService.getUserById(userId)).thenReturn(Optional.of(user));
+        when(serviceUsageRecordService.getServiceUsageRecordByUserId(userId)).thenReturn(Optional.of(serviceUsageRecords));
 
-        verify(model).addAttribute("user", user);
-        assertEquals("user-service-usage-record-details", viewName);
+        String viewName = userController.getUserByIdWithServices(userId, model);
+
+        verify(model, times(1)).addAttribute(UserController.USER_ATTRIBUTE, user);
+        assertEquals(UserController.USER_SERVICE_USAGE_RECORD_DETAILS_PAGE, viewName);
     }
 
     @Test
     public void testGetUserEditPage() {
+        long userId = 1L;
         User user = new User();
-        when(userService.getUserById(1L)).thenReturn(Optional.of(user));
 
-        String viewName = userController.getUserEditPage(1L, model);
+        when(userService.getUserById(userId)).thenReturn(Optional.of(user));
 
-        verify(model).addAttribute("user", user);
-        assertEquals("user-edit", viewName);
+        String viewName = userController.getUserEditPage(userId, model);
+
+        verify(model, times(1)).addAttribute(UserController.USER_ATTRIBUTE, user);
+        assertEquals(UserController.USER_EDIT_PAGE, viewName);
     }
 
     @Test
     public void testUpdateUser() {
+        long userId = 1L;
+        User user = new User();
         User existingUser = new User();
-        when(userService.getUserById(1L)).thenReturn(Optional.of(existingUser));
 
-        User updatedUser = new User();
-        updatedUser.setSurname("Doe");
+        when(userService.getUserById(userId)).thenReturn(Optional.of(existingUser));
 
-        String viewName = userController.updateUser(1L, updatedUser);
+        String viewName = userController.updateUser(userId, user);
 
-        verify(userService).saveUser(existingUser);
-        assertEquals("redirect:/user", viewName);
+        verify(userService, times(1)).saveUser(existingUser);
+        assertEquals(UserController.REDIRECT_TO_USER, viewName);
     }
 
     @Test
     public void testDeleteUser() {
+        long userId = 1L;
         User user = new User();
-        when(userService.getUserById(1L)).thenReturn(Optional.of(user));
 
-        String viewName = userController.deleteUser(1L);
+        when(userService.getUserById(userId)).thenReturn(Optional.of(user));
 
-        verify(userService).deleteUser(user);
-        assertEquals("redirect:/user", viewName);
+        String viewName = userController.deleteUser(userId);
+
+        verify(userService, times(1)).deleteUser(user);
+        assertEquals(UserController.REDIRECT_TO_USER, viewName);
     }
 }

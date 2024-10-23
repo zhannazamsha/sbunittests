@@ -15,7 +15,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -193,5 +192,57 @@ class UserControllerTest {
         mockMvc.perform(post("/user/1/remove"))
                 .andExpect(status().isNotFound());
         verify(userService, times(1)).getUserById(1L);
+    }
+
+    // Additional tests
+
+    @Test
+    void testGetUserByIdWithInvalidId() throws Exception {
+        mockMvc.perform(get("/user/invalid"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testAddUserWithInvalidData() throws Exception {
+        User invalidUser = new User(); // Assuming some constraints are violated
+        mockMvc.perform(post("/user/add").flashAttr("user", invalidUser))
+                .andExpect(status().isBadRequest());
+        verify(userService, times(0)).saveUser(invalidUser);
+    }
+
+    @Test
+    void testUpdateUserWithInvalidData() throws Exception {
+        User invalidUser = new User(); // Assuming some constraints are violated
+        when(userService.getUserById(anyLong())).thenReturn(Optional.of(new User()));
+        mockMvc.perform(post("/user/1/edit").flashAttr("user", invalidUser))
+                .andExpect(status().isBadRequest());
+        verify(userService, times(0)).saveUser(invalidUser);
+    }
+
+    @Test
+    void testDeleteUserWithInvalidId() throws Exception {
+        mockMvc.perform(post("/user/invalid/remove"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetUserByIdWithServices_ServiceUsageRecordNotFound() throws Exception {
+        User user = new User();
+        user.setId(1L);
+        when(userService.userExistsById(anyLong())).thenReturn(true);
+        when(userService.getUserById(anyLong())).thenReturn(Optional.of(user));
+        when(serviceUsageRecordService.getServiceUsageRecordByUserId(anyLong())).thenReturn(Optional.empty());
+        mockMvc.perform(get("/user/1/service-usage-record"))
+                .andExpect(status().isInternalServerError());
+        verify(userService, times(1)).userExistsById(1L);
+        verify(userService, times(1)).getUserById(1L);
+        verify(serviceUsageRecordService, times(1)).getServiceUsageRecordByUserId(1L);
+    }
+
+    @Test
+    void testGetUserDetailsWithInvalidId() throws Exception {
+        when(userService.getUserById(anyLong())).thenReturn(Optional.empty());
+        mockMvc.perform(get("/user/invalid/details"))
+                .andExpect(status().isBadRequest());
     }
 }
